@@ -17,24 +17,7 @@ public class Main {
             String input = scanner.nextLine();
             switch (input) {
                 case "1":
-                    System.out.println("Select a matching strategy: ALL, ANY, NONE");
-                    String strategy = scanner.nextLine().toUpperCase();
-                    Finder finder = null;
-                    switch (strategy) {
-                        case "ALL":
-                            finder = new Finder(new AllFindingStrategy(getQuery()));
-                            break;
-                        case "ANY":
-                            finder = new Finder(new AnyFindingStrategy(getQuery()));
-                            break;
-                        case "NONE":
-                            finder = new Finder(new NoneFindingStrategy(getQuery()));
-                            break;
-                        default:
-                            System.out.println("Wrong strategy Try again.");
-                            break;
-                    }
-                    assert finder != null;
+                    Finder finder = chooseSearchStrategy();
                     printResults(finder.find(invertedIndex, lines));
                     break;
                 case "2":
@@ -76,11 +59,32 @@ public class Main {
                     }
                     invertedIndex.get(word).add(count);
                 }
-                count++;  // counting scanned lines
+                count++;  //counting scanned lines
             }
         } catch (FileNotFoundException e) {
             System.out.println("No file found: " + fileName);
         }
+    }
+
+    public static Finder chooseSearchStrategy() {
+
+        System.out.println("Select a matching strategy: ALL, ANY, NONE");
+        String strategy = scanner.nextLine().toUpperCase();
+        Finder finder = null;
+        switch (strategy) {
+            case "ALL":
+                finder = new Finder(new AllFindingStrategy(getQuery()));
+                break;
+            case "ANY":
+                finder = new Finder(new AnyFindingStrategy(getQuery()));
+                break;
+            case "NONE":
+                finder = new Finder(new NoneFindingStrategy(getQuery()));
+                break;
+            default:
+                System.out.println("Wrong strategy Try again.");
+        }
+        return finder;
     }
 
     public static String[] getQuery() {
@@ -99,9 +103,7 @@ public class Main {
             return;
         }
         System.out.println(indexes.size() + " persons found:");
-        indexes.stream()
-                .filter(lines::containsKey)
-                .forEach(idx -> System.out.println(lines.get(idx)));
+        indexes.forEach(idx -> System.out.println(lines.get(idx)));
     }
 
     public static void printLines() {
@@ -138,20 +140,13 @@ class AllFindingStrategy implements FindingStrategy {
     }
 
     public List<Integer> getResults(Map<String, List<Integer>> invertedIndex, Map<Integer, String> lines) {
-        List<List<Integer>> queryLinesLists = Arrays.stream(query)
+        List<Integer> commons = new ArrayList<>(lines.keySet());
+        Arrays.stream(query)
                 //if query is not found .map list = null
                 .map(invertedIndex::get)
-                .collect(Collectors.toList());
-
-        List<Integer> commons;
-        if (queryLinesLists.get(0) != null) {
-            commons = new ArrayList<>(queryLinesLists.get(0));
-            for (var list : queryLinesLists) {
-                commons.retainAll(list);
-            }
-        } else {
-            commons = new ArrayList<>();
-        }
+                .forEach(list -> {
+                    if (list != null) commons.retainAll(list);
+                });
         return commons;
     }
 }
@@ -184,17 +179,18 @@ class NoneFindingStrategy implements FindingStrategy {
 
     //  list of line numbers (map values) where query (key) is absent - DIFFERENCE
     public List<Integer> getResults(Map<String, List<Integer>> invertedIndex, Map<Integer, String> lines) {
+        List<Integer> diffList = new ArrayList<>(lines.keySet());
         List<Integer> queryLinesList = Arrays.stream(query)
                 .map(invertedIndex::get)
                 .flatMap(Collection::stream)
                 .distinct()
                 .collect(Collectors.toList());
 
-        List<Integer> difList = new ArrayList<>(lines.keySet());
-        difList.removeAll(queryLinesList);
-        return difList;
+        diffList.removeAll(queryLinesList);
+        return diffList;
     }
 }
+
 
 
 
