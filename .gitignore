@@ -1,0 +1,5 @@
+# Project exclude paths
+/.gradle/
+/Simple Search Engine/task/build/
+/Simple Search Engine/task/out/
+/Simple Search Engine/task/out/production/classes/
